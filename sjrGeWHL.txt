@@ -1,0 +1,433 @@
+local PrevKeyDown = false
+local ThirdpersonVal = false
+local TargetPriorities = {}
+for i=1, 128 do table.insert( TargetPriorities, 0 ) end
+
+RunConsoleCommand( "cl_updaterate", "100" )
+RunConsoleCommand( "cl_interp_ratio", "0" )
+RunConsoleCommand( "cl_interp", "0" )
+
+local function CreateCheatMenu()
+
+	local Frame = vgui.Create( "DFrame" )
+	Frame:SetSize( 400, 400 )
+	Frame:SetTitle( "Segregation" )
+	Frame:Center()
+	Frame:MakePopup()
+
+	local Sheet = Frame:Add( "DPropertySheet" )
+	Sheet:Dock( FILL )
+
+	------------------------------------------------------------------
+	-- Aimbot --------------------------------------------------------
+	------------------------------------------------------------------
+
+	local Aimbot = Sheet:Add( "DPanel" )
+	Aimbot:DockPadding( 5, 5, 5, 5 )
+
+	local AtTeammates = Aimbot:Add( "DCheckBoxLabel" )
+	AtTeammates:DockMargin( 5, 5, 5, 5 )
+	AtTeammates:Dock( TOP )
+	AtTeammates:SetDark( true )
+	AtTeammates:SetText( "At Teammates" )
+	AtTeammates:SetConVar( "Aim_Team" )
+
+	local IntersectHitboxes = Aimbot:Add( "DCheckBoxLabel" )
+	IntersectHitboxes:DockMargin( 5, 5, 5, 5 )
+	IntersectHitboxes:Dock( TOP )
+	IntersectHitboxes:SetDark( true )
+	IntersectHitboxes:SetText( "Intersect Hitboxes" )
+	IntersectHitboxes:SetConVar( "Aim_Intersection" )
+
+	local Extrapolation = Aimbot:Add( "DCheckBoxLabel" )
+	Extrapolation:DockMargin( 5, 5, 5, 5 )
+	Extrapolation:Dock( TOP )
+	Extrapolation:SetDark( true )
+	Extrapolation:SetText( "Extrapolation" )
+	Extrapolation:SetConVar( "Extrapolation" )
+
+	local InstantShot = Aimbot:Add( "DCheckBoxLabel" )
+	InstantShot:DockMargin( 5, 5, 5, 5 )
+	InstantShot:Dock( TOP )
+	InstantShot:SetDark( true )
+	InstantShot:SetText( "Instant Shot" )
+	InstantShot:SetConVar( "Alternative" )
+
+	local Height = Aimbot:Add( "DNumSlider" )
+	Height:SetHeight( 16 )
+	Height:DockMargin( 5, 5, 5, 5 )
+	Height:Dock( TOP )
+	Height:SetDark( true )
+	Height:SetText( "Height" )
+	Height:SetMin( 0 )
+	Height:SetMax( 1 )
+	Height:SetDecimals( 2 )
+	Height:SetConVar( "Aim_Height" )
+
+	local Hitbox = Aimbot:Add( "Panel" )
+	Hitbox:SetHeight( 22 )
+	Hitbox:DockMargin( 5, 5, 5, 5 )
+	Hitbox:Dock( TOP )
+
+	local HitboxComboBox = Hitbox:Add( "DComboBox" )
+	HitboxComboBox:SetWide( 80 )
+	HitboxComboBox:DockMargin( 0, 0, 9, 0 )
+	HitboxComboBox:Dock( LEFT )
+	HitboxComboBox:SetSortItems( false )
+	HitboxComboBox:SetConVar( "Aim_Group" )
+	HitboxComboBox:AddChoice( "Head", "1" )
+	HitboxComboBox:AddChoice( "Chest", "2" )
+	HitboxComboBox:AddChoice( "Stomach", "3" )
+	HitboxComboBox:AddChoice( "Left arm", "4" )
+	HitboxComboBox:AddChoice( "Right arm", "5" )
+	HitboxComboBox:AddChoice( "Left leg", "6" )
+	HitboxComboBox:AddChoice( "Right leg", "7" )
+	HitboxComboBox.OnSelect = function( self, index, value, data ) RunConsoleCommand( self.m_strConVar, data ) end
+
+	local HitboxLabel = Hitbox:Add( "DLabel" )
+	HitboxLabel:Dock( FILL )
+	HitboxLabel:SetText( "Hitbox" )
+	HitboxLabel:SetDark( true )
+
+	Sheet:AddSheet( "Aimbot", Aimbot, "icon16/gun.png" )
+
+	------------------------------------------------------------------
+	-- HvH -----------------------------------------------------------
+	------------------------------------------------------------------
+
+	local HvH = Sheet:Add( "DPanel" )
+	HvH:DockPadding( 5, 5, 5, 5 )
+
+	local Pitch = HvH:Add( "DNumSlider" )
+	Pitch:SetHeight( 16 )
+	Pitch:DockMargin( 5, 5, 5, 5 )
+	Pitch:Dock( TOP )
+	Pitch:SetDark( true )
+	Pitch:SetText( "Pitch" )
+	Pitch:SetMin( -180 )
+	Pitch:SetMax( 180 )
+	Pitch:SetDecimals( 2 )
+	Pitch:SetConVar( "Angle_X" )
+
+	local FakeYaw = HvH:Add( "DNumSlider" )
+	FakeYaw:SetHeight( 16 )
+	FakeYaw:DockMargin( 5, 5, 5, 5 )
+	FakeYaw:Dock( TOP )
+	FakeYaw:SetDark( true )
+	FakeYaw:SetText( "Fake Yaw" )
+	FakeYaw:SetMin( -180 )
+	FakeYaw:SetMax( 180 )
+	FakeYaw:SetDecimals( 2 )
+	FakeYaw:SetConVar( "Angle_Y" )
+
+	local RealYawFirst = HvH:Add( "DNumSlider" )
+	RealYawFirst:SetHeight( 16 )
+	RealYawFirst:DockMargin( 5, 5, 5, 5 )
+	RealYawFirst:Dock( TOP )
+	RealYawFirst:SetDark( true )
+	RealYawFirst:SetText( "Real Yaw First" )
+	RealYawFirst:SetMin( -180 )
+	RealYawFirst:SetMax( 180 )
+	RealYawFirst:SetDecimals( 2 )
+	RealYawFirst:SetConVar( "First_Choked_Angle_Y" )
+
+	local RealYawSecond = HvH:Add( "DNumSlider" )
+	RealYawSecond:SetHeight( 16 )
+	RealYawSecond:DockMargin( 5, 5, 5, 5 )
+	RealYawSecond:Dock( TOP )
+	RealYawSecond:SetDark( true )
+	RealYawSecond:SetText( "Real Yaw Second" )
+	RealYawSecond:SetMin( -180 )
+	RealYawSecond:SetMax( 180 )
+	RealYawSecond:SetDecimals( 2 )
+	RealYawSecond:SetConVar( "Second_Choked_Angle_Y" )
+
+	local FakeLagMaximum = HvH:Add( "DNumSlider" )
+	FakeLagMaximum:SetHeight( 16 )
+	FakeLagMaximum:DockMargin( 5, 5, 5, 5 )
+	FakeLagMaximum:Dock( TOP )
+	FakeLagMaximum:SetDark( true )
+	FakeLagMaximum:SetText( "Fake Lag Maximum" )
+	FakeLagMaximum:SetMin( 0 )
+	FakeLagMaximum:SetMax( 21 )
+	FakeLagMaximum:SetDecimals( 0 )
+	FakeLagMaximum:SetConVar( "Maximum_Choked_Commands" )
+
+	local FakeLagMinimum = HvH:Add( "DNumSlider" )
+	FakeLagMinimum:SetHeight( 16 )
+	FakeLagMinimum:DockMargin( 5, 5, 5, 5 )
+	FakeLagMinimum:Dock( TOP )
+	FakeLagMinimum:SetDark( true )
+	FakeLagMinimum:SetText( "Fake Lag Minimum" )
+	FakeLagMinimum:SetMin( 0 )
+	FakeLagMinimum:SetMax( 21 )
+	FakeLagMinimum:SetDecimals( 0 )
+	FakeLagMinimum:SetConVar( "Minimum_Choked_Commands" )
+
+	local Resolver = HvH:Add( "DCheckBoxLabel" )
+	Resolver:DockMargin( 5, 5, 5, 5 )
+	Resolver:Dock( TOP )
+	Resolver:SetDark( true )
+	Resolver:SetText( "Resolver" )
+	Resolver:SetConVar( "Bruteforce" )
+
+	local ResolverBullets = HvH:Add( "DNumSlider" )
+	ResolverBullets:SetHeight( 16 )
+	ResolverBullets:DockMargin( 5, 5, 5, 5 )
+	ResolverBullets:Dock( TOP )
+	ResolverBullets:SetDark( true )
+	ResolverBullets:SetText( "Resolver Bullets" )
+	ResolverBullets:SetMin( 0 )
+	ResolverBullets:SetMax( 30 )
+	ResolverBullets:SetDecimals( 0 )
+	ResolverBullets:SetConVar( "Bruteforce_Tolerance" )
+
+	local ResolverMemoryBullets = HvH:Add( "DNumSlider" )
+	ResolverMemoryBullets:SetHeight( 16 )
+	ResolverMemoryBullets:DockMargin( 5, 5, 5, 5 )
+	ResolverMemoryBullets:Dock( TOP )
+	ResolverMemoryBullets:SetDark( true )
+	ResolverMemoryBullets:SetText( "Resolver Memory Bullets" )
+	ResolverMemoryBullets:SetMin( 0 )
+	ResolverMemoryBullets:SetMax( 30 )
+	ResolverMemoryBullets:SetDecimals( 0 )
+	ResolverMemoryBullets:SetConVar( "Bruteforce_Memory_Tolerance" )
+
+	local ResolverAngles = HvH:Add( "DListView" )
+	ResolverAngles:SetHeight( 70 )
+	ResolverAngles:DockMargin( 5, 5, 230, 5 )
+	ResolverAngles:Dock( TOP )
+	ResolverAngles:SetSortable( false )
+	ResolverAngles:AddColumn( "Resolver Angles" ).DoRightClick = function()
+		local Menu = DermaMenu()
+		Menu:AddOption( "Add", function() 
+			Derma_StringRequest( "Add Resolver Angles",
+				"Enter angles separated by spaces:",
+				"",
+				function( text ) 
+					local angles = {}
+					for k, v in ipairs( string.Split( text, " " ) ) do
+						if ( tonumber( v ) != nil ) then
+							table.insert( angles, string.Trim( v ) )
+						end
+					end
+					for k, v in ipairs( ResolverAngles:GetLines() ) do
+						table.insert( angles, v:GetValue( 1 ) )
+					end
+					RunConsoleCommand( "Bruteforce_Angles", table.concat( angles, ", " ) )
+				end )
+		end ):SetIcon( "icon16/add.png" )
+		Menu:Open()
+	end
+
+	ResolverAngles.OnRowRightClick = function()
+		local Menu = DermaMenu()
+		Menu:AddOption( "Add", function() 
+			Derma_StringRequest( "Add Resolver Angles",
+				"Enter angles separated by spaces:",
+				"",
+				function( text ) 
+					local angles = {}
+					local inserted = false
+					for k, v in ipairs( ResolverAngles:GetLines() ) do
+						table.insert( angles, v:GetValue( 1 ) )
+						if ( !inserted && v:IsLineSelected() ) then
+							inserted = true
+							for k, v in ipairs( string.Split( text, " " ) ) do
+								if ( tonumber( v ) != nil ) then
+									table.insert( angles, string.Trim( v ) )
+								end
+							end
+						end
+					end
+					RunConsoleCommand( "Bruteforce_Angles", table.concat( angles, ", " ) )
+				end )
+		end ):SetIcon( "icon16/add.png" )
+		Menu:AddOption( "Remove", function()
+			local angles = {}
+			for k, v in ipairs( ResolverAngles:GetLines() ) do
+				if ( !v:IsLineSelected() ) then 
+					table.insert( angles, v:GetValue( 1 ) )
+				end
+			end
+			RunConsoleCommand( "Bruteforce_Angles", table.concat( angles, ", " ) )
+		end ):SetIcon( "icon16/bin_closed.png" )
+		Menu:Open()
+	end
+
+	ResolverAngles.Think = function( self )
+		local strValue = GetConVarString( "Bruteforce_Angles" )
+		if ( self.m_strConVarValue == strValue ) then return end
+		self.m_strConVarValue = strValue
+		self:Clear()
+		for k, v in ipairs( string.Split( self.m_strConVarValue, "," ) ) do
+			if ( tonumber( v ) != nil ) then
+				self:AddLine( string.Trim( v ) )
+			end
+		end
+	end
+
+	Sheet:AddSheet( "HvH", HvH, "icon16/monkey.png" )
+
+	------------------------------------------------------------------
+	-- Visuals -------------------------------------------------------
+	------------------------------------------------------------------
+
+	local Visuals = Sheet:Add( "DPanel" )
+	Visuals:DockPadding( 5, 5, 5, 5 )
+	
+	local WireframeModels = Visuals:Add( "DCheckBoxLabel" )
+	WireframeModels:DockMargin( 5, 5, 5, 5 )
+	WireframeModels:Dock( TOP )
+	WireframeModels:SetDark( true )
+	WireframeModels:SetText( "Wireframe Models" )
+	WireframeModels:SetValue( GetConVarNumber( "r_drawothermodels" ) == 2 )
+	WireframeModels.OnChange = function( self, val ) RunConsoleCommand( "r_drawothermodels", val && "2" || "1" ) end
+
+	local CrosshairScale = Visuals:Add( "DNumSlider" )
+	CrosshairScale:SetHeight( 16 )
+	CrosshairScale:DockMargin( 5, 5, 5, 5 )
+	CrosshairScale:Dock( TOP )
+	CrosshairScale:SetDark( true )
+	CrosshairScale:SetText( "Crosshair Scale" )
+	CrosshairScale:SetMin( 0 )
+	CrosshairScale:SetMax( 100 )
+	CrosshairScale:SetDecimals( 0 )
+	CrosshairScale:SetConVar( "Uber_Alles_Scale" )
+
+	local CrosshairSpeed = Visuals:Add( "DNumSlider" )
+	CrosshairSpeed:SetHeight( 16 )
+	CrosshairSpeed:DockMargin( 5, 5, 5, 5 )
+	CrosshairSpeed:Dock( TOP )
+	CrosshairSpeed:SetDark( true )
+	CrosshairSpeed:SetText( "Crosshair Speed" )
+	CrosshairSpeed:SetMin( 0 )
+	CrosshairSpeed:SetMax( 300 )
+	CrosshairSpeed:SetDecimals( 0 )
+	CrosshairSpeed:SetConVar( "Uber_Alles_Speed" )
+
+	Sheet:AddSheet( "Visuals", Visuals, "icon16/eye.png" )
+
+	------------------------------------------------------------------
+	-- Misc ----------------------------------------------------------
+	------------------------------------------------------------------
+
+	local Misc = Sheet:Add( "DPanel" )
+	Misc:DockPadding( 5, 5, 5, 5 )
+
+	local KillSounds = Misc:Add( "DCheckBoxLabel" )
+	KillSounds:DockMargin( 5, 5, 5, 5 )
+	KillSounds:Dock( TOP )
+	KillSounds:SetDark( true )
+	KillSounds:SetText( "Kill Sounds" )
+	KillSounds:SetConVar( "Commentator" )
+
+	local Thirdperson = Misc:Add( "DCheckBoxLabel" )
+	Thirdperson:DockMargin( 5, 5, 5, 5 )
+	Thirdperson:Dock( TOP )
+	Thirdperson:SetDark( true )
+	Thirdperson:SetText( "Thirdperson" )
+	Thirdperson:SetValue( ThirdpersonVal )
+	Thirdperson.OnChange = function( self, val )
+		RunConsoleCommand( val && "thirdperson" || "firstperson" )
+		ThirdpersonVal = val
+	end
+
+	Sheet:AddSheet( "Misc", Misc, "icon16/wand.png" )
+
+	------------------------------------------------------------------
+	-- Player List ---------------------------------------------------
+	------------------------------------------------------------------
+
+	local PlayerListPnl = Sheet:Add( "DPanel" )
+
+	local PlayerList = PlayerListPnl:Add( "DListView" )
+	PlayerList:Dock( FILL )
+	PlayerList:SetMultiSelect( false )
+	PlayerList:AddColumn( "ID" ):SetFixedWidth( 30 )
+	PlayerList:AddColumn( "Name" ):SetFixedWidth( 194 )
+	PlayerList:AddColumn( "Friend" ):SetFixedWidth( 50 )
+	PlayerList:AddColumn( "Resolve" ):SetFixedWidth( 50 )
+	PlayerList:AddColumn( "Priority" ):SetFixedWidth( 50 )
+	PlayerList.Think = function( self )
+		
+		for id, pl in ipairs( player.GetAll() ) do
+
+			if ( IsValid( pl.PlayerListEntry ) ) then continue end
+
+			pl.PlayerListEntry = self:AddLine( tostring( pl:EntIndex() ) )
+			pl.PlayerListEntry.Player = pl
+			pl.PlayerListEntry.PIndex = pl:EntIndex()
+			pl.PlayerListEntry.Think = function( self )
+			
+				if ( !IsValid( self.Player ) ) then
+					self:Remove()
+					return
+				end
+				
+				if ( self.PName == nil || self.PName != self.Player:Nick() ) then
+					self.PName = self.Player:Nick()
+					self:SetValue( 2, self.PName )
+				end
+				
+				local priority = TargetPriorities[self.PIndex]
+				
+				if ( self.Priority == nil || self.Priority != priority ) then
+					self.Priority = priority
+					self:SetValue( 3, ( self.Priority == -1 ) && "Yes" || "No" )
+					self:SetValue( 4, ( self.Priority == -2 ) && "No" || "Yes" )
+					self:SetValue( 5, tostring( self.Priority ) )
+				end
+
+			end
+
+		end
+
+	end
+
+	PlayerList.OnRowRightClick = function( parent, id, line )
+		local ply_id = line.PIndex
+		local Menu = DermaMenu()
+		Menu:AddOption( "Toggle Friend", function() 
+			TargetPriorities[ply_id] = ( TargetPriorities[ply_id] == -1 ) && 0 || -1
+			RunConsoleCommand( "Set_Priority", tostring( ply_id ) .. " " .. tostring( TargetPriorities[ply_id] ) )
+		end ):SetIcon( "icon16/user_green.png" )
+		Menu:AddOption( "Toggle Resolve", function() 
+			TargetPriorities[ply_id] = ( TargetPriorities[ply_id] == -2 ) && 0 || -2
+			RunConsoleCommand( "Set_Priority", tostring( ply_id ) .. " " .. tostring( TargetPriorities[ply_id] ) )
+		end ):SetIcon( "icon16/calculator.png" )
+		Menu:AddOption( "Change Priority", function() 
+			Derma_StringRequest( "Change Priority",
+				"Enter priority:",
+				"",
+				function( text ) 
+					local priority = tonumber( text )
+					if ( priority != nil ) then
+						TargetPriorities[ply_id] = priority
+						RunConsoleCommand( "Set_Priority", tostring( ply_id ) .. " " .. tostring( TargetPriorities[ply_id] ) )
+					end
+				end )
+		end ):SetIcon( "icon16/arrow_up.png" )
+		Menu:Open()
+	end
+
+	Sheet:AddSheet( "Player List", PlayerListPnl, "icon16/user.png" )
+	
+	return Frame
+	
+end
+
+local CheatMenu = CreateCheatMenu()
+
+hook.Add( "Think", "SegregationThink", function()
+	if ( input.IsKeyDown( KEY_INSERT ) && !PrevKeyDown ) then
+		if ( IsValid( CheatMenu ) ) then
+			CloseDermaMenus()
+			CheatMenu:Remove()
+			CheatMenu = nil
+		else
+			CheatMenu = CreateCheatMenu()
+		end
+	end
+	PrevKeyDown = input.IsKeyDown( KEY_INSERT )
+end )
